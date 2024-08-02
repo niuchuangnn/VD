@@ -16,14 +16,14 @@ import torch.multiprocessing as mp
 
 
 def get_arguments():
-    parser = argparse.ArgumentParser(description="Pretrain a resnet model with SOLID", add_help=False)
+    parser = argparse.ArgumentParser(description="Pretrain a resnet model with VD", add_help=False)
 
     # Data
     parser.add_argument("--data-dir", type=Path, default="./datasets/imagenet",
                         help='Path to the image net dataset')
 
     # Checkpoints
-    parser.add_argument("--exp-dir", type=Path, default="./exp/solid",
+    parser.add_argument("--exp-dir", type=Path, default="./exp/vd",
                         help='Path to the experiment folder, where all logs/checkpoints will be stored')
     parser.add_argument("--log-freq-time", type=int, default=60,
                         help='Print logs to the stats.txt file every [log-freq-time] seconds')
@@ -132,7 +132,7 @@ def main_worker(gpu, ngpus_per_node, args):
     )
 
     torch.backends.cudnn.benchmark = True
-    model = SOLID(args).cuda(gpu)
+    model = VD(args).cuda(gpu)
     model = nn.SyncBatchNorm.convert_sync_batchnorm(model)
     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[gpu])
     optimizer = LARS(
@@ -214,7 +214,7 @@ def adjust_learning_rate(args, optimizer, loader, step):
     return lr
 
 
-class SOLID(nn.Module):
+class VD(nn.Module):
     def __init__(self, args):
         super().__init__()
         self.args = args
@@ -245,7 +245,7 @@ class SOLID(nn.Module):
         if self.args.ti_coeff > 0:
             Ns, Ds = x1.shape
 
-            # SOLID
+            # VD
             p1s = torch.reshape(x1, [Ns, -1, self.bin_size])
             p2s = torch.reshape(x2, [Ns, -1, self.bin_size])
             p1s = torch.clamp(torch.softmax(p1s/self.t, dim=2), 1e-8).reshape([-1, self.bin_size])
@@ -261,7 +261,7 @@ class SOLID(nn.Module):
 
         N, D = x1.shape
 
-        # SOLID
+        # VD
         p1 = torch.reshape(x1, [N, -1, self.bin_size])
         p2 = torch.reshape(x2, [N, -1, self.bin_size])
         p1 = torch.clamp(torch.softmax(p1/self.t, dim=2), 1e-8).reshape([N, D])
@@ -402,7 +402,7 @@ class FullGatherLayer(torch.autograd.Function):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser('SOLID training script', parents=[get_arguments()])
+    parser = argparse.ArgumentParser('VD training script', parents=[get_arguments()])
     args = parser.parse_args()
     main(args)
 

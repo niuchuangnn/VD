@@ -14,7 +14,7 @@ conda install matplotlib
 ## Pretrain on ImageNet
 
 ```shell script
-sbatch job_solid.sh  # need to adjust according to your computing platform
+sbatch job_vd.sh  # need to adjust according to your computing platform
 ```
 
 ## Linear Evaluation on ImageNet
